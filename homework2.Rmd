@@ -1,6 +1,6 @@
 ---
 title: "Homework 2"
-author: "Victor Rios Faria"
+author: "VICTOR RIOS FARIA"
 date: "`r Sys.Date()`"
 output:
   html_document:
@@ -45,7 +45,7 @@ In July 2012, in the aftermath of a mass shooting in a movie theater in Aurora, 
 #| warning: false
 
 
-mass_shootings <- read_csv(here::here("MBA", "Term 3", "Data Science for Business", "my_dsb2023", "mass_shootings.csv"))
+mass_shootings <- read_csv(here::here("mass_shootings.csv"))
 
 glimpse(mass_shootings)
 ```
@@ -95,7 +95,7 @@ mass_shootings %>%
   ggplot(aes(x = reorder(race, -count), y = count)) + # creates a plot that shows the number of mass shootings per race
   geom_bar(stat = "identity", fill = "red4", width = 0.5) + # sets the plot as a bar plot
   geom_text(aes(label = count), vjust = 1, size = 3.5, color = "white") + # adds the numbers to the bars
-  labs(x = "Race", y = "Mass Shootings Occurences", title = "Mass shootings in the USA since 1982 are mostly made by white people ", subtitle = "Number of Mass Shootings by Race") + # adds labels to the axis, title and subtitle
+  labs(x = "Race", y = "Mass Shootings Occurences", title = "Mass shootings in the USA since 1982 were mostly made by white people ", subtitle = "Number of Mass Shootings by Race") + # adds labels to the axis, title and subtitle
   theme_minimal()
 
 ```
@@ -134,7 +134,7 @@ mass_shootings %>%
   geom_boxplot(fill = "wheat4") + # defines the plot as a boxplot
   labs(x = "Location", y = "Total Victims", title = "Mass shootings in Military and School facilities usually have more victims", subtitle = "Total Victims of Mass Shootings by Location") + # adds the axis labels, title and subtitle
   theme_minimal() +
-  annotate("text", x = Inf, y = Inf, label = "A mass shooting with 604 victims was omitted from the 'Other' location", hjust = 1.1, vjust = 1.7, size = 2.5) # adds an annotation to tell that the Las Vegas Strip massacre has been removed from the dataset
+  annotate("text", x = Inf, y = Inf, label = "A mass shooting with 604 victims was omitted from the 'Other' location", hjust = 1.1, vjust = 1.7, size = 2.5) # adds an annotation to tell that the Las Vegas Strip massacre has been removed from the datastream
 
 ```
 
@@ -146,7 +146,29 @@ Address the following questions. Generate appropriate figures/tables to support 
 
 ```{r}
 
-
+mass_shootings %>%
+  mutate(gender = case_when(
+    gender == "M" ~ "Male",                      # consolidates M and Male into a single category
+    gender == "F" ~ "Female",                    # consolidates F and Female into a single category
+    substring(gender,1,1) == "F" ~ "Female",     # sets the category for the long string starting with an F as Female
+    TRUE ~ gender                                # handles other cases that don't match the conditions  
+  )) %>%
+  mutate(prior_signs_mental_health_issues = case_when(
+    prior_signs_mental_health_issues %in% c("yes", "Yes") ~ "Yes",
+    prior_signs_mental_health_issues %in% c("no", "No") ~ "No",
+    TRUE ~ "Unknown or Unavailable"
+  )) %>%
+  group_by(gender, prior_signs_mental_health_issues) %>%
+  summarise(count=n()) %>%
+  ungroup %>%
+  mutate(perc_cases = count / sum(count)) %>%
+  ggplot(aes(x=gender, y=count, fill=prior_signs_mental_health_issues)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = percent(perc_cases), y = count), vjust = -0.5, color = "black") +
+  scale_fill_manual(values = c("red2", "green4", "yellow3")) +
+  labs(x = "Gender", y = "Number of Mass Attacks", title = "Mass Shootings by Males with Prior Mental Health Issues represents xx% of the ocurrences since 1982", subtitle = "Mass Shootings by Gender and Prior Mental Health Issues",
+       subtitle = "Count and Percentage of Mass Shootings by Gender and Prior Mental Health Issues") +
+  theme_minimal()
 
 ```
 
