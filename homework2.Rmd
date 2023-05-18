@@ -158,16 +158,29 @@ mass_shootings %>%
     prior_signs_mental_health_issues %in% c("no", "No") ~ "No",
     TRUE ~ "Unknown or Unavailable"
   )) %>%
+  
   group_by(gender, prior_signs_mental_health_issues) %>%
   summarise(count=n()) %>%
   ungroup %>%
+  
   mutate(perc_cases = count / sum(count)) %>%
-  ggplot(aes(x=gender, y=count, fill=prior_signs_mental_health_issues)) +
-  geom_bar(stat = "identity") +
-  geom_text(aes(label = percent(perc_cases), y = count), vjust = -0.5, color = "black") +
-  scale_fill_manual(values = c("red2", "green4", "yellow3")) +
-  labs(x = "Gender", y = "Number of Mass Attacks", title = "Mass Shootings by Males with Prior Mental Health Issues represents xx% of the ocurrences since 1982", subtitle = "Mass Shootings by Gender and Prior Mental Health Issues",
-       subtitle = "Count and Percentage of Mass Shootings by Gender and Prior Mental Health Issues") +
+  
+  ggplot(aes(x=gender, 
+             y=count,
+             fill=prior_signs_mental_health_issues)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = paste0(round(perc_cases*100, 1), "%")),
+            position = position_dodge(width = 0.9),
+            hjust = 0.5,
+            vjust = -0.5,
+            colour = "black", 
+            size = 3)+
+  scale_fill_manual(values = c("green4", "yellow3", "red2")) +
+  labs(x = "Gender", 
+       y = "Number of Mass Attacks",
+       fill = "Prior Signs of Mental Health Issues",
+       title = "Mass Shootings by Males with Prior Mental Health Issues represents \n46.5% of the ocurrences since 1982, summing up a total of 67 occurences", 
+       subtitle = "Mass Shootings by Gender and Prior Mental Health Issues Status") +
   theme_minimal()
 
 ```
