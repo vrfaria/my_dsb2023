@@ -189,6 +189,21 @@ mass_shootings %>%
 
 ```{r}
 
+mass_shootings %>%
+  separate(date, into = c("month", "day", "year"), sep = "/") %>%
+  mutate(month = as.numeric(month)) %>%
+  group_by(month) %>%
+  summarise(count = n()) %>%
+  
+  
+  ggplot(aes(x = month, y = count)) +
+  geom_bar(stat = "identity") +
+  scale_x_continuous(breaks = 1:12, labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))+
+  labs(y = "Number of Mass Attacks",
+       title = "Mass shootings are more often in the months of February, June and November", 
+       subtitle = "Mass shootings by month of the year since 1982") +
+  theme_minimal()
+
 ```
 
 -   How does the distribution of mass shooting fatalities differ between White and Black shooters? What about White and Latino shooters?
