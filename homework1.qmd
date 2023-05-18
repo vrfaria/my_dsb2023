@@ -363,8 +363,9 @@ I want you to think how we would organise our data manipulation to create the fo
 
 ![](images/sfo-cancellations.png)
 
-```         
-{r}
+```{r}
+
+#| label: problem-9
 
 # To reproduce the image above, I would go through the following steps:
 
@@ -419,7 +420,7 @@ The age gaps dataset includes "gender" columns, which always contain the values 
 The following is a data dictionary of the variables used
 
 | variable            | class     | description                                                                                             |
-|:-----------------|:-----------------|:-----------------------------------|
+|:--------------------|:----------|:--------------------------------------------------------------------------------------------------------|
 | movie_name          | character | Name of the film                                                                                        |
 | release_year        | integer   | Release year                                                                                            |
 | director            | character | Director of the film                                                                                    |
@@ -436,8 +437,115 @@ The following is a data dictionary of the variables used
 
 ```{r}
 
+#| label: problem-10
+
+library(DescTools)
+
 age_gaps <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-02-14/age_gaps.csv')
 
+# How is age_difference distributed? What's the 'typical' age_difference in movies?
+
+age_gaps %>%
+  ggplot(aes(x=age_difference)) +
+  geom_histogram(binwidth = 2) # Through an histogram of age_difference, one can investigate its distribution and observe that it's concentrated in the region between 0 and 10, with a long tail to higher values. The typical age_difference, as per the highest bar in the histogram, is around 2 or 3 years.
+
+age_gaps %>%
+  summarise(upto5years = mean(age_difference <= 5)) # with this summarise call we can check that 35.8% of the age difference observations are equal to or less than 5 years
+
+age_gaps %>%
+  summarise(upto10years = mean(age_difference <= 10)) # with this summarise call we can check that 59.8% of the age difference observations are equal to or less than 10 years
+
+age_gaps %>%
+  summarise(upto20years = mean(age_difference <= 20)) # with this summarise call we can check that 86.8% of the age difference observations are equal to or less than 20 years
+
+# How frequently does the "half plus seven" rule apply in this dataset?
+
+age_gaps %>%
+  mutate(half_plus_seven = if_else (actor_1_age/2 + 7 < actor_2_age,1,0)) %>% # uses the mutate function to create a dummy variable that takes the value of 1 if the half plus seven rule applies and 0 otherwise
+  summarise(half_plus_seven_frequency = mean(half_plus_seven)) # takes the mean of the created dummy variable to get the % of observations to which the half plus seven rule applies - 68.8%
+
+# Which movie has the greatest number of love interests?
+
+age_gaps %>%
+  group_by (movie_name) %>% # groups the data by the name of the movie
+  summarise(love_interests = n()) %>% # counts how many love interests each movie has
+  arrange(desc(love_interests)) %>% # sorts the data on descending order of number of love interests
+  slice(1) # selects the movie with the most number of love interests, which is Love Actually
+
+# Which actors/ actresses have the greatest number of love interests in this dataset?
+
+love_interests_actor_1 <- age_gaps %>% # creates a new dataframe for the number of love interests for the actors/actrices in slot 1
+  group_by (actor_1_name) %>% # groups the data by actor 1's name
+  summarise (love_interests_1 = n()) # counts how many love interests each of those actors/actrices has
+
+love_interests_actor_2 <- age_gaps %>% # creates a new dataframe for the number of love interests for the actors/actrices in slot 2
+  group_by (actor_2_name) %>% # groups the data by actor 2's name
+  summarise (love_interests_2 = n()) # counts how many love interests each of those actors/actrices has
+
+full_join(love_interests_actor_1, love_interests_actor_2, by = c("actor_1_name" = "actor_2_name")) %>% # joins together the data from the two individual actors/actrices dataframes
+  mutate_at(vars(love_interests_1, love_interests_2), ~replace(., is.na(.), 0)) %>% # replace any NA value (because the actor/actrice was absent in one of the previous dataframe) with 0
+  mutate(total_love_interests = love_interests_1 + love_interests_2) %>% # calculates the total number of love interests, considering apparitions in both positions
+  arrange(desc(total_love_interests)) %>% # sorts the data on descending order of number of total love interests
+  slice(1:5) # selects the top 5 actor/actrice with the most number of love interests. Keanu Reeves, with 27 total love interests, leads the ranking, followed by Adam Sandler (20), Leonardo DiCaprio, Roger Moore and Sean Connery (17)
+
+
+# Is the mean/median age difference staying constant over the years (1935 - 2022)?
+
+age_gaps %>%
+  group_by(release_year) %>% # groups the data by release year
+  summarise(average_age_difference=mean(age_difference)) %>% # computes the average age difference for each year
+  ggplot(aes(x=release_year,y=average_age_difference)) + # creates a plot of the average age difference x release year of the movie
+  geom_point() + # defines the plot as a scatter plot
+  geom_smooth(method = "lm" ,se = FALSE) # adds a linear trend line to the plot, from which we can see there is a downward slope, meaning that the average age difference went down throught years (got reduced by about 10 years over the 87-year range)
+
+age_gaps %>%
+  group_by(release_year) %>% # groups the data by release year
+  summarise(average_age_difference=mean(age_difference)) %>% # computes the average age difference for each year
+  summarise(correlation = cor(average_age_difference, release_year)) # double checks the existence of a negative correlation betwen release year and average age difference (-0.486, equivalent to an R2 of 0.236 in the trend line observed in the previous plot)
+
+# How frequently does Hollywood depict same-gender love interests?
+
+age_gaps %>%
+  mutate(same_gender=if_else(character_1_gender==character_2_gender,1,0)) %>% # creates a dummy variable that takes the value of 1 if the love interest was between characters of the same gender and 0 otherwise
+  summarise(same_gender_frequency=mean(same_gender)) # gets the frequency of same gender love interest among the dataset by computing the mean of the previously defined dummy variable. We can conclude that same gender love interests represents less than 2% of the observations
+
+age_gaps %>%
+  mutate(same_gender=if_else(character_1_gender==character_2_gender,1,0)) %>% # creates a dummy variable that takes the value of 1 if the love interest was between characters of the same gender and 0 otherwise
+  group_by(release_year) %>% # groups the data by release year
+  summarise(same_gender_frequency=mean(same_gender)) %>% # gets the frequency of same gender love interest each year
+  ggplot(aes(x=release_year,y=same_gender_frequency)) + # creates a plot of the same gender love interest frequency x release year of the movie
+  geom_point() # defines the plot as a scatter plot. From this plot, we can observe that same gender love interest appeared for the first time only in 1997, 62 years after the oldest record in the dataset
+
+age_gaps %>%
+  mutate(same_gender=if_else(character_1_gender==character_2_gender,1,0)) %>% # creates a dummy variable that takes the value of 1 if the love interest was between characters of the same gender and 0 otherwise
+  group_by(release_year) %>% # groups the data by release year
+  summarise(same_gender_frequency=mean(same_gender)) %>% # gets the frequency of same gender love interest each year
+  slice(50:82) %>% # slices the dataset so it starts in 1990
+  ggplot(aes(x=release_year,y=same_gender_frequency)) + # creates a plot of the same gender love interest frequency x release year of the movie
+  geom_point() + # defines the plot as a scatter plot.
+  geom_smooth(method = "lm" ,se = FALSE) # adds a linear trend line to the plot, from which we can see there is a upward slope, meaning that the same gender love interest has become for frequent since 1990
+
+age_gaps %>%
+  mutate(same_gender=if_else(character_1_gender==character_2_gender,1,0)) %>% # creates a dummy variable that takes the value of 1 if the love interest was between characters of the same gender and 0 otherwise
+  group_by(character_1_gender) %>% # groups the data by character 1 gender
+  summarise(same_gender_observations=sum(same_gender)) # gets the number of observations of same gender love interest per gender. From this table, we can observe that there is no significant difference between man-man and woman-woman love interest observations
+
+# Extra: which gender is played by an older actor/actress more often?
+
+age_gaps %>%
+  mutate(same_gender=if_else(character_1_gender==character_2_gender,1,0)) %>% # creates a dummy variable that takes the value of 1 if the love interest was between characters of the same gender and 0 otherwise
+  filter(same_gender==0) %>% # filters the data to keep only observations of different gender love interests
+  group_by(character_1_gender) %>% # groups the data by character 1 gender
+  summarise(older_partner_observations=n()) # creates a table showing how many times each gender played the oldest partner in the love interest. From it, we can observe that man are more than 4.5 times more likely to be played by an older actor
+
+age_gaps %>%
+  mutate(same_gender=if_else(character_1_gender==character_2_gender,1,0)) %>% # creates a dummy variable that takes the value of 1 if the love interest was between characters of the same gender and 0 otherwise
+  filter(same_gender==0) %>% # filters the data to keep only observations of different gender love interests
+  group_by(character_1_gender, release_year) %>% # groups the data by character 1 gender and year
+  summarise(older_partner_observations=n()) %>% # creates a table showing how many times each gender played the oldest partner in the love interest.
+  ggplot(aes(x = release_year, y = older_partner_observations, fill = character_1_gender)) + # creates a plot of how often each gender is played by an older character over the years
+  geom_bar(stat = "identity", position = "fill") + # sets the plot type as a bar plot that sums up to 100%
+  labs(y = "Percentage of times the older artist is of each gender") # once again, it appear that in the 1990's it started to become more often that female characters are played by artists that are older than their male character love interest pair
 
 ```
 
