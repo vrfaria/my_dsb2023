@@ -88,13 +88,17 @@ yearly_mass_shootings <- mass_shootings %>% # creates a new data frame to store 
 
 #| label: Question 2
 
-mass_shootings %>%
+mass_shootings_race <- mass_shootings %>%               # defines a new datastream for corrected/consolidated race information
+  
   mutate(race = case_when(
     race == "white"   ~ "White",                        # unifies the spelling for White
     race == "black"   ~ "Black",                        # unifies the spelling for Black
     race %in% c("unclear", "-") ~ "Unclear or Unknown", # consolidates "unclear" and "-" into a single category
     TRUE ~ race                                         # handles other cases that don't match the conditions
-  )) %>%
+  ))
+
+mass_shootings_race %>%
+  
   group_by(race) %>% # groups the data by race
   summarise(count = n()) %>% # count the number of mass shootings per race
   ggplot(aes(x = reorder(race, -count), y = count)) + # creates a plot that shows the number of mass shootings per race
@@ -157,17 +161,20 @@ Address the following questions. Generate appropriate figures/tables to support 
 
 #| label: Question 5
 
-mass_shootings %>%
+mass_shootings_mh <- mass_shootings %>% # defines a new datastream consolidating the information on prior signs mental health issues
+  
+  mutate(prior_signs_mental_health_issues = case_when(              
+    prior_signs_mental_health_issues %in% c("yes", "Yes") ~ "Yes",  # consolidates all spellings of Yes into a single category
+    prior_signs_mental_health_issues %in% c("no", "No") ~ "No",     # consolidates all spellings of No into a single category
+    TRUE ~ "Unknown or Unavailable"                                 # consolidates all other cases as Unknown or Unavailable
+  ))
+
+mass_shootings_mh %>%
   mutate(gender = case_when(
     gender == "M" ~ "Male",                      # consolidates M and Male into a single category
     gender == "F" ~ "Female",                    # consolidates F and Female into a single category
     substring(gender,1,1) == "F" ~ "Female",     # sets the category for the long string starting with an F as Female
     TRUE ~ gender                                # handles other cases that don't match the conditions  
-  )) %>%
-  mutate(prior_signs_mental_health_issues = case_when(              
-    prior_signs_mental_health_issues %in% c("yes", "Yes") ~ "Yes",  # consolidates all spellings of Yes into a single category
-    prior_signs_mental_health_issues %in% c("no", "No") ~ "No",     # consolidates all spellings of No into a single category
-    TRUE ~ "Unknown or Unavailable"                                 # consolidates all other cases as Unknown or Unavailable
   )) %>%
   
   group_by(gender, prior_signs_mental_health_issues) %>% # groups the data by both the gender and prior mental health issues
@@ -222,47 +229,35 @@ mass_shootings %>%
 
 #| label: Question 7
 
-mass_shootings %>%
+mass_shootings_race %>% # recalls the datastream created in Question 2 with corrected/consolidated race information
   
-  mutate(race = case_when(
-    race == "white"   ~ "White",                        # unifies the spelling for White
-    race == "black"   ~ "Black",                        # unifies the spelling for Black
-    race %in% c("unclear", "-") ~ "Unclear or Unknown", # consolidates "unclear" and "-" into a single category
-    TRUE ~ race                                         # handles other cases that don't match the conditions
-  )) %>%
-  
-  filter(race == "White" | race == "Black") %>%
+  filter(race == "White" | race == "Black") %>% # filters the data to keep only the 2 races we want to compare
   group_by(race) %>% # groups the data by race
   
-  ggplot(aes(y=fatalities, color=race)) +
-  geom_boxplot() +
-  scale_color_manual(values = c("White" = "grey", "Black" = "black")) +
-  labs(subtitle = "Distribution of Fatalities by Race", title = "Mass shootings started by white people usually have more fatalities \nthan those started by black people, including more and higher outliers") +
+  ggplot(aes(y=fatalities, color=race)) + # creates a plot of the number of fatalities for each race
+  geom_boxplot() + # defines the chart s a boxplot
+  scale_color_manual(values = c("White" = "grey", "Black" = "black")) + # sets different colours for the two races
+  labs(subtitle = "Distribution of Fatalities by Race", title = "Mass shootings started by white people usually have more fatalities \nthan those started by black people, including more and higher outliers") + # adds a title and a subtitle to the chart
   theme_minimal() +
-  ylim(0, 30) +
-  annotate("text", x = Inf, y = Inf, label = "A mass shooting with 58 fatalities was omitted from the 'White' plot for better visualization", hjust = 1.1, vjust = 1.7, size = 2.5)
+  ylim(0, 30) + # changes the limit of the y-axis in the plot
+  annotate("text", x = Inf, y = Inf, label = "A mass shooting with 58 fatalities was omitted from the 'White' plot for better visualization", hjust = 1.1, vjust = 1.7, size = 2.5) # adds an annotation to the chart to cite the removed observation
 
 ##########################################################################################
 
-mass_shootings %>%
+# repeats the process replacing black for latino
+
+mass_shootings_race %>%
   
-  mutate(race = case_when(
-    race == "white"   ~ "White",                        # unifies the spelling for White
-    race == "black"   ~ "Black",                        # unifies the spelling for Black
-    race %in% c("unclear", "-") ~ "Unclear or Unknown", # consolidates "unclear" and "-" into a single category
-    TRUE ~ race                                         # handles other cases that don't match the conditions
-  )) %>%
-  
-  filter(race == "White" | race == "Latino") %>%
+  filter(race == "White" | race == "Latino") %>% # filters the data to keep only the 2 races we want to compare
   group_by(race) %>% # groups the data by race
   
-  ggplot(aes(y=fatalities, color=race)) +
-  geom_boxplot() +
+  ggplot(aes(y=fatalities, color=race)) + # creates a plot of the number of fatalities for each race
+  geom_boxplot() + # defines the chart s a boxplot
   scale_color_manual(values = c("White" = "grey", "Latino" = "tomato")) +
-  labs(subtitle = "Distribution of Fatalities by Race", title = "The figures don't change by much when comparing White to Latinos") +
+  labs(subtitle = "Distribution of Fatalities by Race", title = "The figures don't change by much when comparing White to Latinos") + # sets different colours for the two races
   theme_minimal() +
-  ylim(0, 30) +
-  annotate("text", x = Inf, y = Inf, label = "A mass shooting with 58 fatalities was omitted from the 'White' plot for better visualization", hjust = 1.1, vjust = 1.7, size = 2.5)
+  ylim(0, 30) + # changes the limit of the y-axis in the plot
+  annotate("text", x = Inf, y = Inf, label = "A mass shooting with 58 fatalities was omitted from the 'White' plot for better visualization", hjust = 1.1, vjust = 1.7, size = 2.5) # adds an annotation to the chart to cite the removed observation
 
 
 ```
@@ -275,6 +270,30 @@ mass_shootings %>%
 
 #| label: Question 8
 
+mass_shootings_mh %>% # makes reference to the datastream with consolidated mental health information
+  
+  filter(prior_signs_mental_health_issues != "Unknown or Unavailable") %>% # filters the data to contain only cases where the shooter had a conclusive record
+  group_by(prior_signs_mental_health_issues) %>% # groups the data by the mental health status
+  summarise(count = n(),                         # counts how many mass shootings there has been per group
+            avg_fatalities = mean(fatalities),   # gets the average of fatalities per group
+            avg_victims = mean(total_victims),   # gets the average number of victims per group
+            med_fatalities = median(fatalities), # gets the median of fatalities per group
+            med_victims = median(total_victims)) # gets the median number of victims per group
+
+# From some simple statistics, we are leaned to conclude that mass shootings by people with prior signs of mental health issues are not only more frequent, but also lead to more fatalities and victims
+
+# Filter the data for the two groups of interest
+group_yes <- mass_shootings_mh %>% filter(prior_signs_mental_health_issues == "Yes")
+group_no <- mass_shootings_mh %>% filter(prior_signs_mental_health_issues == "No")
+
+# Perform t-test on fatalities
+t.test(group_yes$fatalities, group_no$fatalities)
+
+# Perform t-test on total victims
+t.test(group_yes$total_victims, group_no$total_victims)
+
+# However, a t-test on the number of fatalities and victims does not show statistically significant difference at 5% level between the two groups
+
 ```
 
 -   Assess the relationship between mental illness and total victims, mental illness and location type, and the intersection of all three variables.
@@ -282,6 +301,74 @@ mass_shootings %>%
 ```{r}
 
 #| label: Question 9
+
+
+mass_shootings_mh %>% # makes reference to the datastream with consolidated mental health information
+  
+  filter(prior_signs_mental_health_issues != "Unknown or Unavailable") %>% # filters the data to contain only cases where the shooter had a conclusive record
+  
+  ggplot(aes(y = total_victims, x = prior_signs_mental_health_issues)) + # plots the total victims of the mass shooting for different mental health conditions
+  geom_boxplot() + # defines the plot as a boxplot
+  labs(
+    x = "Prior Signs of Mental Health Issues", # adds a title to the x-axis
+    y = "Total Victims", # adds a title to the y-axis
+    title = "Having a prior sign of mental health issues leads to mass attacks with more victims", # adds a title to the chart
+    subtitle = "Distribution of total victims per prior sign of mental health issues condition", # adds a subtitle to the chart
+    ) +
+  theme_minimal()
+
+# From the plot, one may think there are more victims in mass shootings initiated by people with prior signs of mental health issues. However, the t-test performed in the previous question showed that we can not state that the average number of victims is different between the two groups in a 5% significance level
+
+##########################################################################################################
+
+mass_shootings_mh %>%
+  filter(total_victims<200) %>%                                    # remove the Las Vegas Strip massacre
+  mutate(location...8 = case_when(
+    location...8 == "religious"   ~ "Religious",                   # unifies the spelling for Religious
+    location...8 %in% c("Other\n", "Airport") ~ "Other",           # unifies the spelling for Other and adds Airport to this grouping because it has only one observation
+    location...8 %in% c("\nWorkplace", "workplace") ~ "Workplace", # unifies the spelling for Workplace
+    TRUE ~ location...8                                            # handles other cases that don't match the conditions
+  )) %>%
+  
+  filter(prior_signs_mental_health_issues != "Unknown or Unavailable") %>% # filters the data to contain only cases where the shooter had a conclusive record
+  
+  ggplot(aes(x = prior_signs_mental_health_issues, fill = location...8)) + # plots the occurences per location and mental health state
+  geom_bar(position = "fill") + # defines the plot as a bar chart
+  labs(x = "Prior Signs of Mental Health Issues", # adds a name to the x-axis
+       y = "Mass Shootings Occurences Distribution", # adds a name to the y-axis
+       fill = "Location", # adds a name to the colour mapping
+       title = "There is no difference in preferable locations for shoothers with \nprior signs of mental health issues compared to those with no signs", # adds a title to the chart
+       subtitle = "Distribution of mass shootings occurences per mental health condition and shooting location"
+      ) + # adds a subtitle to the chart
+  theme_minimal()
+
+# The plot shows that the distribuition of mass shootings accross the different location types is very similar between the two groups, meaning that people with prior signs of mental health issues do not have a different behaviour in terms of where they start the mass shootings
+
+##########################################################################################################
+
+mass_shootings_mh %>%
+  filter(total_victims<200) %>%                                    # remove the Las Vegas Strip massacre
+  mutate(location = case_when(
+    location...8 == "religious"   ~ "Religious",                   # unifies the spelling for Religious
+    location...8 %in% c("Other\n", "Airport") ~ "Other",           # unifies the spelling for Other and adds Airport to this grouping because it has only one observation
+    location...8 %in% c("\nWorkplace", "workplace") ~ "Workplace", # unifies the spelling for Workplace
+    TRUE ~ location...8                                            # handles other cases that don't match the conditions
+  )) %>%
+  
+  filter(prior_signs_mental_health_issues != "Unknown or Unavailable") %>% # filters the data to contain only cases where the shooter had a conclusive record
+
+  ggplot(aes(x = total_victims)) +
+  geom_histogram(binwidth = 5) +
+  facet_grid(location ~ prior_signs_mental_health_issues) +
+  labs(title = "Relationship between total victims, location and prior signs of mental health issues",
+       x = "Total VIctims") +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 6),
+        strip.text = element_text(size = 4),
+        strip.background = element_rect(fill = "lightgray", color = "gray", size = 1))
+
+# From this series of plot, it appears that victims have a stronger dependency on the location than on the mental health condition of the shooter. However, there is to few data to perform a more conclusive analysis
+
 
 ```
 
