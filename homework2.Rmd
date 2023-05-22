@@ -40,6 +40,7 @@ In July 2012, in the aftermath of a mass shooting in a movie theater in Aurora, 
 ## Obtain the data
 
 ```{r}
+#| label: loading database
 #| echo: false
 #| message: false
 #| warning: false
@@ -73,6 +74,8 @@ glimpse(mass_shootings)
 
 ```{r}
 
+#| label: Question 1
+
 yearly_mass_shootings <- mass_shootings %>% # creates a new data frame to store the information about the number of mass shootings per year, which will be derived from the original mass_shootings data
   group_by(year) %>% # group the data from the original data by year
   summarise(n()) # counts how many mass shootings there was per year
@@ -82,6 +85,8 @@ yearly_mass_shootings <- mass_shootings %>% # creates a new data frame to store 
 -   Generate a bar chart that identifies the number of mass shooters associated with each race category. The bars should be sorted from highest to lowest and each bar should show its number.
 
 ```{r}
+
+#| label: Question 2
 
 mass_shootings %>%
   mutate(race = case_when(
@@ -104,6 +109,8 @@ mass_shootings %>%
 
 ```{r}
 
+#| label: Question 3
+
 mass_shootings %>%
   mutate(location...8 = case_when(
     location...8 == "religious"   ~ "Religious",                   # unifies the spelling for Religious
@@ -121,6 +128,8 @@ mass_shootings %>%
 -   Redraw the same plot, but remove the Las Vegas Strip massacre from the dataset.
 
 ```{r}
+
+#| label: Question 4
 
 mass_shootings %>%
   filter(total_victims<200) %>%                                    # remove the Las Vegas Strip massacre
@@ -146,6 +155,8 @@ Address the following questions. Generate appropriate figures/tables to support 
 
 ```{r}
 
+#| label: Question 5
+
 mass_shootings %>%
   mutate(gender = case_when(
     gender == "M" ~ "Male",                      # consolidates M and Male into a single category
@@ -153,34 +164,32 @@ mass_shootings %>%
     substring(gender,1,1) == "F" ~ "Female",     # sets the category for the long string starting with an F as Female
     TRUE ~ gender                                # handles other cases that don't match the conditions  
   )) %>%
-  mutate(prior_signs_mental_health_issues = case_when(
-    prior_signs_mental_health_issues %in% c("yes", "Yes") ~ "Yes",
-    prior_signs_mental_health_issues %in% c("no", "No") ~ "No",
-    TRUE ~ "Unknown or Unavailable"
+  mutate(prior_signs_mental_health_issues = case_when(              
+    prior_signs_mental_health_issues %in% c("yes", "Yes") ~ "Yes",  # consolidates all spellings of Yes into a single category
+    prior_signs_mental_health_issues %in% c("no", "No") ~ "No",     # consolidates all spellings of No into a single category
+    TRUE ~ "Unknown or Unavailable"                                 # consolidates all other cases as Unknown or Unavailable
   )) %>%
   
-  group_by(gender, prior_signs_mental_health_issues) %>%
-  summarise(count=n()) %>%
-  ungroup %>%
+  group_by(gender, prior_signs_mental_health_issues) %>% # groups the data by both the gender and prior mental health issues
+  summarise(count=n()) %>% # counts how many mass attacks were initiated by each combination of gender and prior mental health issues
+  ungroup %>% # ungroups the data so total percentages can be calculated later
   
-  mutate(perc_cases = count / sum(count)) %>%
+  mutate(perc_cases = count / sum(count)) %>% # creates a new field with the percentage of total cases per combination of gender and prior mental health issues
   
-  ggplot(aes(x=gender, 
-             y=count,
-             fill=prior_signs_mental_health_issues)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  geom_text(aes(label = paste0(round(perc_cases*100, 1), "%")),
-            position = position_dodge(width = 0.9),
-            hjust = 0.5,
-            vjust = -0.5,
-            colour = "black", 
-            size = 3)+
-  scale_fill_manual(values = c("green4", "yellow3", "red2")) +
-  labs(x = "Gender", 
-       y = "Number of Mass Attacks",
-       fill = "Prior Signs of Mental Health Issues",
-       title = "Mass Shootings by Males with Prior Mental Health Issues represents \n46.5% of the ocurrences since 1982, summing up a total of 67 occurences", 
-       subtitle = "Mass Shootings by Gender and Prior Mental Health Issues Status") +
+  ggplot(aes(x=gender, y=count, fill=prior_signs_mental_health_issues)) + # creates a plot of the number of mass attacks per gender and prior mental health issues status
+  geom_bar(stat = "identity", position = "dodge") + # configures the display of the bars in the chart
+  geom_text(aes(label = paste0(round(perc_cases*100, 1), "%")), # defines the labels in the bars as a percentage
+            position = position_dodge(width = 0.9), # and its position in regard to the bars,
+            hjust = 0.5, # horizontally
+            vjust = -0.5, # and vertically
+            colour = "black", # defines the label text as black
+            size = 3)+ # and font size 3
+  scale_fill_manual(values = c("green4", "yellow3", "red2")) + # defines the colour of the bars for each prior mental health issues status
+  labs(x = "Gender", #creates labels for the x-axis...
+       y = "Number of Mass Attacks", # and the y-axis...
+       fill = "Prior Signs of Mental Health Issues", # changes the colour legend's title
+       title = "Mass Shootings by Males with Prior Mental Health Issues represents \n46.5% of the ocurrences since 1982, summing up a total of 67 occurences",# sets the chart title...
+       subtitle = "Mass Shootings by Gender and Prior Mental Health Issues Status") + # and its subtitle
   theme_minimal()
 
 ```
@@ -189,19 +198,20 @@ mass_shootings %>%
 
 ```{r}
 
+#| label: Question 6
+
 mass_shootings %>%
-  separate(date, into = c("month", "day", "year"), sep = "/") %>%
-  mutate(month = as.numeric(month)) %>%
-  group_by(month) %>%
-  summarise(count = n()) %>%
+  separate(date, into = c("month", "day", "year"), sep = "/") %>% # breaks the information in the data column into three different variables: month, day and year
+  mutate(month = as.numeric(month)) %>% # transform the month variable from char to numeric so that later it gets sorted by ascending numerical order
+  group_by(month) %>% # group the data by month
+  summarise(count = n()) %>% # count the number of mass attacks per month of the year
   
-  
-  ggplot(aes(x = month, y = count)) +
-  geom_bar(stat = "identity") +
-  scale_x_continuous(breaks = 1:12, labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))+
-  labs(y = "Number of Mass Attacks",
-       title = "Mass shootings are more often in the months of February, June and November", 
-       subtitle = "Mass shootings by month of the year since 1982") +
+  ggplot(aes(x = month, y = count)) + # creates a plot of the number of mass attacks per month
+  geom_bar(stat = "identity") + # defines it as a bar plot
+  scale_x_continuous(breaks = 1:12, labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))+ # tags the x-axis with the months abbreviation instead of the numbers
+  labs(y = "Number of Mass Attacks", # adds the title to the y-axis
+       title = "Mass shootings are more often in the months of February, June and November", # adds a title to the chart
+       subtitle = "Mass shootings by month of the year since 1982") + # adds a subtitle to the chart
   theme_minimal()
 
 ```
@@ -209,6 +219,51 @@ mass_shootings %>%
 -   How does the distribution of mass shooting fatalities differ between White and Black shooters? What about White and Latino shooters?
 
 ```{r}
+
+#| label: Question 7
+
+mass_shootings %>%
+  
+  mutate(race = case_when(
+    race == "white"   ~ "White",                        # unifies the spelling for White
+    race == "black"   ~ "Black",                        # unifies the spelling for Black
+    race %in% c("unclear", "-") ~ "Unclear or Unknown", # consolidates "unclear" and "-" into a single category
+    TRUE ~ race                                         # handles other cases that don't match the conditions
+  )) %>%
+  
+  filter(race == "White" | race == "Black") %>%
+  group_by(race) %>% # groups the data by race
+  
+  ggplot(aes(y=fatalities, color=race)) +
+  geom_boxplot() +
+  scale_color_manual(values = c("White" = "grey", "Black" = "black")) +
+  labs(subtitle = "Distribution of Fatalities by Race", title = "Mass shootings started by white people usually have more fatalities \nthan those started by black people, including more and higher outliers") +
+  theme_minimal() +
+  ylim(0, 30) +
+  annotate("text", x = Inf, y = Inf, label = "A mass shooting with 58 fatalities was omitted from the 'White' plot for better visualization", hjust = 1.1, vjust = 1.7, size = 2.5)
+
+##########################################################################################
+
+mass_shootings %>%
+  
+  mutate(race = case_when(
+    race == "white"   ~ "White",                        # unifies the spelling for White
+    race == "black"   ~ "Black",                        # unifies the spelling for Black
+    race %in% c("unclear", "-") ~ "Unclear or Unknown", # consolidates "unclear" and "-" into a single category
+    TRUE ~ race                                         # handles other cases that don't match the conditions
+  )) %>%
+  
+  filter(race == "White" | race == "Latino") %>%
+  group_by(race) %>% # groups the data by race
+  
+  ggplot(aes(y=fatalities, color=race)) +
+  geom_boxplot() +
+  scale_color_manual(values = c("White" = "grey", "Latino" = "tomato")) +
+  labs(subtitle = "Distribution of Fatalities by Race", title = "The figures don't change by much when comparing White to Latinos") +
+  theme_minimal() +
+  ylim(0, 30) +
+  annotate("text", x = Inf, y = Inf, label = "A mass shooting with 58 fatalities was omitted from the 'White' plot for better visualization", hjust = 1.1, vjust = 1.7, size = 2.5)
+
 
 ```
 
@@ -218,11 +273,15 @@ mass_shootings %>%
 
 ```{r}
 
+#| label: Question 8
+
 ```
 
 -   Assess the relationship between mental illness and total victims, mental illness and location type, and the intersection of all three variables.
 
 ```{r}
+
+#| label: Question 9
 
 ```
 
